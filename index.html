@@ -638,7 +638,29 @@
             </p>
         </div>
     </footer>
+<!-- compteur global discret (CountAPI) -->
+<span id="visitor-count" aria-hidden="true"
+      style="font-size:9px; opacity:0.06; position:fixed; right:8px; bottom:4px; z-index:9999; pointer-events:none;">
+  Visitors: ...
+</span>
 
+<script>
+(async function(){
+  const el = document.getElementById('visitor-count');
+  // namespace + key : tu peux changer "ahmedbourazza" et "site-visits" si tu veux
+  const url = 'https://api.countapi.xyz/hit/ahmedbourazza/site-visits';
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Network response not ok');
+    const data = await res.json(); // { value: N, ... }
+    el.textContent = 'Visitors: ' + (data.value ?? '0');
+  } catch (err) {
+    // en cas d'erreur on affiche rien ou un tiret
+    el.textContent = 'Visitors: -';
+    // console.log(err);
+  }
+})();
+</script>
 	<!-- core  -->
     <script src="assets/vendors/jquery/jquery-3.4.1.js"></script>
     <script src="assets/vendors/bootstrap/bootstrap.bundle.js"></script>
