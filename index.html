@@ -638,14 +638,35 @@
             </p>
         </div>
     </footer>
-<span id="visitor-count" style="display:none;"></span>
+<!-- compteur global (API Ninjas) -->
+<span id="visitor-count" style="font-size:9px; opacity:0.06; position:fixed; right:8px; bottom:4px; z-index:9999; pointer-events:none;">
+  Visitors: ...
+</span>
+
 <script>
 (async function(){
-  const res = await fetch('https://api.countapi.xyz/hit/ahmedbourazza/site-visits');
-  const data = await res.json();
-  document.getElementById('visitor-count').textContent = data.value;
+  const el = document.getElementById('visitor-count');
+  const apiKey = "6SdkW4XmOJoBQHBgChUh1A==8g1bpCoHfMkpgOG6"; // ta clé API
+  const counterName = "ahmedbourazza_site"; // nom unique de ton compteur
+
+  try {
+    // incrémenter le compteur
+    const res = await fetch(`https://api.api-ninjas.com/v1/counter?id=${counterName}&hit=true`, {
+      method: "GET",
+      headers: { "X-Api-Key": apiKey }
+    });
+
+    if (!res.ok) throw new Error("Erreur API");
+    const data = await res.json();
+    // data = { "id":"ahmedbourazza_site", "value": N }
+    el.textContent = "Visitors: " + data.value;
+  } catch (err) {
+    el.textContent = "Visitors: -";
+    console.error(err);
+  }
 })();
 </script>
+
 
 	<!-- core  -->
     <script src="assets/vendors/jquery/jquery-3.4.1.js"></script>
