@@ -657,35 +657,47 @@
     <footer class="footer py-3">
         <div class="container">
             <p class="small mb-0 text-light">
-                &copy; <script>document.write(new Date().getFullYear())</script> Created By <a href="#" target="_blank"><span class="text-danger" title="Bootstrap 4 Themes and Dashboards">Ahmed Bourazza</span></a> 
+                &copy; <script>document.write(new Date().getFullYear())</script> Created By <a href="#" target="_blank"><span class="text-danger" title="Bootstrap 4 Themes and Dashboards">Ahmed Bourazza</span></a>
+                <span id="visitor-count" class="ml-3" style="display:none; white-space:nowrap;">
+                    <i class="fas fa-eye text-danger mr-1"></i><span id="visitor-value"></span> visitors
+                </span>
             </p>
         </div>
     </footer>
-<!-- compteur global (API Ninjas) -->
-<span id="visitor-count" style="font-size:9px; opacity:0.06; position:fixed; right:8px; bottom:4px; z-index:9999; pointer-events:none;">
-  Visitors: ...
-</span>
 
+<!-- compteur global (API Ninjas) -->
 <script>
 (async function(){
-  const el = document.getElementById('visitor-count');
-  const apiKey = "6SdkW4XmOJoBQHBgChUh1A==8g1bpCoHfMkpgOG6"; // ta clé API
-  const counterName = "ahmedbourazza_site"; // nom unique de ton compteur
+  const wrap = document.getElementById('visitor-count');
+  const valueEl = document.getElementById('visitor-value');
+  const apiKey = "6SdkW4XmOJoBQHBgChUh1A==8g1bpCoHfMkpgOG6";
+  const counterName = "ahmedbourazza_site";
+  const seenKey = "ab_portfolio_counted";
+
+  // un visiteur n'est compté qu'une fois par navigateur
+  let alreadyCounted = false;
+  try { alreadyCounted = localStorage.getItem(seenKey) === "1"; } catch (e) {}
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
 
   try {
-    // incrémenter le compteur
-    const res = await fetch(`https://api.api-ninjas.com/v1/counter?id=${counterName}&hit=true`, {
-      method: "GET",
-      headers: { "X-Api-Key": apiKey }
-    });
-
-    if (!res.ok) throw new Error("Erreur API");
+    const res = await fetch(
+      `https://api.api-ninjas.com/v1/counter?id=${counterName}${alreadyCounted ? "" : "&hit=true"}`,
+      { headers: { "X-Api-Key": apiKey }, signal: controller.signal }
+    );
+    if (!res.ok) throw new Error("API error " + res.status);
     const data = await res.json();
-    // data = { "id":"ahmedbourazza_site", "value": N }
-    el.textContent = "Visitors: " + data.value;
+    if (typeof data.value !== "number") throw new Error("Unexpected response");
+
+    if (!alreadyCounted) { try { localStorage.setItem(seenKey, "1"); } catch (e) {} }
+    valueEl.textContent = data.value.toLocaleString("en-US");
+    wrap.style.display = "inline";
   } catch (err) {
-    el.textContent = "Visitors: -";
-    console.error(err);
+    // en cas d'échec, le compteur reste masqué
+    console.error("Visitor counter:", err);
+  } finally {
+    clearTimeout(timer);
   }
 })();
 </script>
