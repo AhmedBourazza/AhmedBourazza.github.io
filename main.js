@@ -862,7 +862,7 @@ function aboutHTML() {
       </div>
     </div>
     <p>${esc(profile.intro)}</p>
-    ${profile.experience ? `<h3>Experience</h3><ul class="timeline">${profile.experience.map((e) => `<li><b>${esc(e.date)}</b><span>${esc(e.title)}<small>${esc(e.company)}</small>${e.mission ? `<em>${esc(e.mission)}</em>` : ''}</span></li>`).join('')}</ul>` : ''}
+    ${profile.experience ? `<h3>Experience</h3><ul class="timeline">${profile.experience.map((e) => `<li><b>${esc(e.date)}</b><span>${esc(e.title)}<small>${esc(e.company)}</small>${e.mission ? `<em>${esc(e.mission)}</em>` : ''}${e.softSkills ? `<span class="soft">${e.softSkills.map((s) => `<i>${esc(s)}</i>`).join('')}</span>` : ''}</span></li>`).join('')}</ul>` : ''}
     ${profile.education ? `<h3>Education</h3><ul class="timeline">${profile.education.map((e) => `<li><b>${esc(e.date.slice(-4))}</b><span>${esc(e.title)}<small>${esc(e.school)}</small></span></li>`).join('')}</ul>` : ''}
     <h3>Skills</h3>
     <div class="chips">${profile.skills.map((t) => `<span>${esc(t)}</span>`).join('')}</div>
@@ -1096,7 +1096,7 @@ function adaptQuality(dt) {
   }
 }
 
-if (location.search.includes('debug')) window.__three = { renderer, scene, camera, composer, quality: () => qLevel, ui: { openPanel, contactHTML } };
+if (location.search.includes('debug')) window.__three = { renderer, scene, camera, composer, quality: () => qLevel, ui: { openPanel, contactHTML, aboutHTML } };
 
 renderer.compile(scene, camera); // compile shaders up front so entering doesn't stutter
 let entered = false;

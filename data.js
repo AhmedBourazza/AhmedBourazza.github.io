@@ -35,10 +35,11 @@ export const profile = {
     },
     {
       date: '2025',
-      title: 'Software Development Engineer (10-month contract)',
+      title: 'Versatile Engineer (10-month contract)',
       company: 'Amorino · France',
       mission:
-        'Designed and built a stock management module for the Amorino shop, replacing a costly existing tool.',
+        'Worked closely with the shop team to understand their day-to-day needs, organised the work and delivered a solution that replaced a costly existing tool.',
+      softSkills: ['Communication', 'Organization', 'Critical thinking'],
     },
     {
       date: '2024',

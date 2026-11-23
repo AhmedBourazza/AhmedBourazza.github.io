@@ -73,6 +73,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); c
 .timeline b { color: var(--amber); font-weight: 600; min-width: 40px; }
 .timeline small { display: block; color: var(--muted); font-size: 13px; }
 .timeline em { display: block; font-style: normal; color: #cfc8e8; font-size: 13px; line-height: 1.5; margin-top: 4px; }
+.timeline .soft { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.timeline .soft i { font-style: normal; font-size: 12px; padding: 2px 9px; border-radius: 999px; color: #fde68a; border: 1px solid rgba(251, 191, 36, 0.4); background: rgba(251, 191, 36, 0.08); }
 .panel h3 { margin: 4px 0 10px; font-size: 13px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--violet); }
 .panel { width: min(440px, calc(100vw - 32px)); }
 .contact-list { list-style: none; padding: 0; margin: 0 0 18px; display: grid; gap: 8px; }
