@@ -70,8 +70,8 @@ export const profile = {
   involvement: [
     {
       role: 'President',
-      org: "Futurs Pionniers d'Aide et d'Accompagnement",
-      description: 'Led a charity club dedicated to helping and supporting people in need.',
+      org: 'Future Pioneers',
+      description: 'Led a charity club dedicated to helping and supporting people in need (aid and mentoring).',
     },
   ],
   education: [
