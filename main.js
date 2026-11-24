@@ -22,6 +22,9 @@ const PAL = {
   textMuted: '#9c9a95',
 };
 const FONT = '"Inter", system-ui, sans-serif';
+// Texture quality: full on desktop, lighter on phones/tablets to save memory
+const TEXQ = window.matchMedia('(pointer: coarse)').matches ? 0.6 : 1;
+let ANISO = 4; // set to the GPU maximum once the renderer exists
 
 // Materials are cached so identical ones are shared (fewer GPU state changes,
 // and it lets static meshes with the same material be merged into one draw call).
@@ -61,7 +64,7 @@ function canvasTex(w, h, draw) {
   draw(ctx, w, h);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
+  t.anisotropy = ANISO; // keeps text sharp when a wall is seen at an angle
   return { tex: t, canvas: c, ctx };
 }
 // Loads an image and draws it "cover"-cropped into a small canvas texture,
@@ -94,7 +97,7 @@ function fitFont(ctx, text, weight, size, maxW) {
 function makePlate({ width, height, lines, rule = true, plate = 0x1a1b1d }) {
   const g = new THREE.Group();
   box(width, height, 0.03, std(plate, 0.35, 0.6), 0, 0, 0, g);
-  const res = 360;
+  const res = Math.min(Math.round(800 * TEXQ), Math.floor(4096 / width)); // pixels per metre
   const t = canvasTex(Math.round(width * res), Math.round(height * res), (ctx, w, h) => {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -148,12 +151,13 @@ const canvas = document.getElementById('scene');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 // Quality tiers, picked automatically from the measured frame rate (see adaptQuality)
 const QUALITY = [
+  { pr: Math.min(window.devicePixelRatio, 2) },
   { pr: Math.min(window.devicePixelRatio, 1.5) },
   { pr: Math.min(window.devicePixelRatio, 1.25) },
   { pr: 1 },
-  { pr: 0.8 },
 ];
 let qLevel = 0;
+ANISO = renderer.capabilities.getMaxAnisotropy();
 renderer.setPixelRatio(QUALITY[0].pr);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
@@ -238,10 +242,38 @@ const W = 10, D = 10, H = 4.5;
   floor.receiveShadow = true;
   scene.add(floor);
 
-  const back = new THREE.Mesh(new THREE.PlaneGeometry(W, H), std(PAL.wallBack, 0.95));
+  // fine plaster grain so the walls don't look like flat colour
+  const plaster = canvasTex(512, 512, (ctx, w, h) => {
+    ctx.fillStyle = '#f2f2f2';
+    ctx.fillRect(0, 0, w, h);
+    for (let i = 0; i < 90; i++) {
+      const r = 20 + Math.random() * 70;
+      const x = Math.random() * w, y = Math.random() * h;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      const v = Math.random() > 0.5 ? 255 : 205;
+      g.addColorStop(0, `rgba(${v},${v},${v},0.18)`);
+      g.addColorStop(1, `rgba(${v},${v},${v},0)`);
+      ctx.fillStyle = g;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    const img = ctx.getImageData(0, 0, w, h);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const n = (Math.random() - 0.5) * 22;
+      img.data[i] += n; img.data[i + 1] += n; img.data[i + 2] += n;
+    }
+    ctx.putImageData(img, 0, 0);
+  });
+  plaster.tex.wrapS = plaster.tex.wrapT = THREE.RepeatWrapping;
+  const wallMat = (color, rx, ry) => {
+    const t = plaster.tex.clone();
+    t.repeat.set(rx, ry);
+    t.needsUpdate = true;
+    return new THREE.MeshStandardMaterial({ color, map: t, roughness: 0.92 });
+  };
+  const back = new THREE.Mesh(new THREE.PlaneGeometry(W, H), wallMat(PAL.wallBack, 5, 2.25));
   back.position.set(0, H / 2, -D / 2);
   back.receiveShadow = true;
-  const left = new THREE.Mesh(new THREE.PlaneGeometry(D, H), std(PAL.wall, 0.95));
+  const left = new THREE.Mesh(new THREE.PlaneGeometry(D, H), wallMat(PAL.wall, 5, 2.25));
   left.rotation.y = Math.PI / 2;
   left.position.set(-W / 2, H / 2, 0);
   left.receiveShadow = true;
@@ -293,7 +325,7 @@ const W = 10, D = 10, H = 4.5;
     height: 0.95,
     lines: [
       { text: profile.name.toUpperCase(), size: 0.2, weight: 600, spacing: '14px' },
-      { text: profile.role, size: 0.085, weight: 400, color: PAL.textMuted, spacing: '3px' },
+      { text: profile.role, size: 0.11, weight: 400, color: '#bdbab4', spacing: '4px' },
     ],
   });
   namePlate.position.set(-0.8, 3.25, -D / 2 + 0.02);
@@ -301,7 +333,10 @@ const W = 10, D = 10, H = 4.5;
 
   // framed abstract print
   const art = makeFrame({ width: 1.05, height: 1.4, mat: 0.12 });
-  const artTex = canvasTex(420, 560, (ctx, w, h) => {
+  const ARS = 2 * TEXQ;
+  const artTex = canvasTex(Math.round(420 * ARS), Math.round(560 * ARS), (ctx) => {
+    ctx.scale(ARS, ARS);
+    const w = 420, h = 560;
     ctx.fillStyle = '#d9d3c7';
     ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = '#2f3a46';
@@ -361,8 +396,9 @@ const deskX = -0.8, deskZ = -4.35;
     ['#8fb0cf', 'await '], ['#b9c7d6', 'deploy'], ['#d4d4d4', '(app);'], null,
   ];
   // Drawn in a 768x384 coordinate space, scaled down to a 512x256 texture
-  const screen = canvasTex(512, 256, () => {});
-  screen.ctx.setTransform(512 / 768, 0, 0, 512 / 768, 0, 0);
+  const SW = Math.round(1024 * TEXQ);
+  const screen = canvasTex(SW, SW / 2, () => {});
+  screen.ctx.setTransform(SW / 768, 0, 0, SW / 768, 0, 0);
   let typed = 0;
   const total = codeLines.reduce((n, s) => n + (s ? s[1].length : 0), 0);
   function drawCode() {
@@ -537,7 +573,7 @@ const deskX = -0.8, deskZ = -4.35;
   // portrait, gallery style (black frame + white mat)
   if (profile.portrait || profile.photo) {
     const pf = makeFrame({ width: 0.72, height: 0.76, mat: 0.1 });
-    loadCover(profile.portrait || profile.photo, 360, 380, (tx) => {
+    loadCover(profile.portrait || profile.photo, Math.round(720 * TEXQ), Math.round(760 * TEXQ), (tx) => {
       pf.picMat.map = tx;
       pf.picMat.color.set(0xffffff);
       pf.picMat.needsUpdate = true;
@@ -553,7 +589,10 @@ const deskX = -0.8, deskZ = -4.35;
 //  Left wall: window + "About" panel
 // ============================================================
 {
-  const winTex = canvasTex(800, 520, (ctx, w, h) => {
+  const WS = 1.6 * TEXQ;
+  const winTex = canvasTex(Math.round(800 * WS), Math.round(520 * WS), (ctx) => {
+    ctx.scale(WS, WS);
+    const w = 800, h = 520;
     const g = ctx.createLinearGradient(0, 0, 0, h);
     g.addColorStop(0, '#0b1018');
     g.addColorStop(1, '#1d2633');
@@ -597,7 +636,10 @@ const deskX = -0.8, deskZ = -4.35;
 
   // "About" panel: a framed print with a short summary
   const about = makeFrame({ width: 2.0, height: 1.3, mat: 0 });
-  const aboutTex = canvasTex(1000, 650, (ctx, w, h) => {
+  const AS = 2.2 * TEXQ; // drawn in a 1000x650 layout, rendered at ~2x for crisp text
+  const aboutTex = canvasTex(Math.round(1000 * AS), Math.round(650 * AS), (ctx) => {
+    ctx.scale(AS, AS);
+    const w = 1000, h = 650;
     ctx.fillStyle = '#18191b';
     ctx.fillRect(0, 0, w, h);
     ctx.textBaseline = 'alphabetic';
@@ -672,17 +714,24 @@ const deskX = -0.8, deskZ = -4.35;
   list.forEach((p, i) => {
     const f = makeFrame({ width: fw, height: fh, mat: 0, frame: 0.02, depth: 0.03 });
     const g = f.group;
-    const card = canvasTex(640, Math.round(640 * 0.58), (ctx, w, h) => drawProjectCard(ctx, w, h, p));
+    const PS = 1.6 * TEXQ; // card layout is 640 wide, rendered at ~1024 px
+    const card = canvasTex(Math.round(640 * PS), Math.round(640 * 0.58 * PS), (ctx) => {
+      ctx.scale(PS, PS);
+      drawProjectCard(ctx, 640, Math.round(640 * 0.58), p);
+    });
     f.picMat.map = card.tex;
     f.picMat.color.set(0xffffff);
-    if (p.image) loadCover(p.image, 640, Math.round(640 * 0.58), (img) => {
+    if (p.image) loadCover(p.image, Math.round(1024 * TEXQ), Math.round(1024 * 0.58 * TEXQ), (img) => {
       card.tex.dispose(); // free the placeholder card
       f.picMat.map = img;
       f.picMat.needsUpdate = true;
     });
     // museum-style label under the frame
     const lw = Math.min(fw, 1.3), lh = 0.17;
-    const label = canvasTex(Math.round(lw * 400), Math.round(lh * 400), (ctx, w, h) => {
+    const LS = 2.4 * TEXQ; // label layout at 400 px/m, rendered at ~960 px/m
+    const label = canvasTex(Math.round(lw * 400 * LS), Math.round(lh * 400 * LS), (ctx) => {
+      ctx.scale(LS, LS);
+      const w = lw * 400, h = lh * 400;
       ctx.fillStyle = '#e9e6e0';
       ctx.fillRect(0, 0, w, h);
       ctx.fillStyle = '#1c1c1e';
@@ -1097,6 +1146,7 @@ applyQuality();
 // Lowers the resolution step by step if the device can't keep ~45 fps
 let sampleTime = 0, sampleFrames = 0, measureFrom = Infinity;
 function adaptQuality(dt) {
+  if (tween) return; // camera moves are not representative
   if (performance.now() < measureFrom || qLevel >= QUALITY.length - 1) return;
   sampleTime += dt;
   sampleFrames++;
@@ -1104,12 +1154,17 @@ function adaptQuality(dt) {
   const avg = sampleTime / sampleFrames;
   sampleTime = 0;
   sampleFrames = 0;
-  if (avg > 1 / 45) {
+  // only step down after two slow windows in a row (< 40 fps), so a loading hiccup
+  // doesn't blur the site for good on a normal computer
+  slowWindows = avg > 1 / 40 ? slowWindows + 1 : 0;
+  if (slowWindows >= 2) {
+    slowWindows = 0;
     qLevel++;
     applyQuality();
-    measureFrom = performance.now() + 1000;
+    measureFrom = performance.now() + 1500;
   }
 }
+let slowWindows = 0;
 
 const render = () => renderer.render(scene, camera);
 if (location.search.includes('debug')) window.__three = { renderer, scene, camera, render, quality: () => qLevel, ui: { openPanel, contactHTML, aboutHTML } };
@@ -1172,7 +1227,7 @@ document.getElementById('enter').addEventListener('click', () => {
   document.getElementById('intro').classList.add('hide');
   entered = true;
   clock.getDelta();
-  measureFrom = performance.now() + 2500; // let the first frames settle before judging speed
+  measureFrom = performance.now() + 4000; // let loading and the first camera move settle before judging speed
   goTo('accueil');
   if (new URLSearchParams(location.search).has('stats')) setTimeout(openStats, 1800);
 });
