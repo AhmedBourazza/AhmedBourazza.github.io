@@ -74,21 +74,27 @@ const invalidate = () => { needsRender = true; };
 // Loads an image and draws it "cover"-cropped into a canvas texture of the size we need,
 // so big screenshots never sit in GPU memory at full size. In Chrome, fetch + createImageBitmap
 // decodes the image off the main thread, so loading doesn't make the scene stutter.
-async function loadCover(url, w, h, onReady) {
+async function loadBitmap(url) {
   try {
-    let src;
     if ('createImageBitmap' in window) {
       const blob = await (await fetch(url, { mode: 'cors' })).blob();
-      src = await createImageBitmap(blob);
-    } else {
-      src = await new Promise((ok, ko) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => ok(img);
-        img.onerror = ko;
-        img.src = url;
-      });
+      return await createImageBitmap(blob);
     }
+    return await new Promise((ok, ko) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => ok(img);
+      img.onerror = ko;
+      img.src = url;
+    });
+  } catch {
+    return null;
+  }
+}
+async function loadCover(url, w, h, onReady) {
+  try {
+    const src = await loadBitmap(url);
+    if (!src) return;
     const t = canvasTex(w, h, (ctx) => {
       const s = Math.max(w / src.width, h / src.height);
       const dw = src.width * s, dh = src.height * s;
@@ -137,8 +143,8 @@ function makePlate({ width, height, lines, rule = true, plate = 0x1a1b1d }) {
     });
   });
   // unlit so the lettering reads evenly whatever the lighting on the wall
-  const mat = new THREE.MeshBasicMaterial({ map: t.tex, transparent: true });
-  mat.color.setScalar(0.9);
+  const mat = new THREE.MeshBasicMaterial({ map: t.tex, transparent: true, toneMapped: false });
+  mat.color.setScalar(0.95);
   const p = new THREE.Mesh(new THREE.PlaneGeometry(width, height), mat);
   p.position.z = 0.017;
   g.add(p);
@@ -146,7 +152,7 @@ function makePlate({ width, height, lines, rule = true, plate = 0x1a1b1d }) {
 }
 
 // A gallery frame: thin black frame, optional white mat (passe-partout), picture.
-function makeFrame({ width, height, mat = 0, frame = 0.025, depth = 0.04 }) {
+function makeFrame({ width, height, mat = 0, frame = 0.025, depth = 0.04, unlit = false }) {
   const g = new THREE.Group();
   const fm = std(0x111214, 0.4, 0.3);
   const ow = width + mat * 2, oh = height + mat * 2;
@@ -155,7 +161,10 @@ function makeFrame({ width, height, mat = 0, frame = 0.025, depth = 0.04 }) {
   box(frame, oh, depth, fm, -ow / 2 - frame / 2, 0, 0, g);
   box(frame, oh, depth, fm, ow / 2 + frame / 2, 0, 0, g);
   if (mat > 0) box(ow, oh, 0.01, std(0xf2efe9, 0.9), 0, 0, -0.005, g);
-  const picMat = new THREE.MeshStandardMaterial({ color: 0x2a2b2e, roughness: 0.55 });
+  // unlit = exact colours and crisp text (used for text panels); lit = realistic prints/photos
+  const picMat = unlit
+    ? new THREE.MeshBasicMaterial({ color: 0x2a2b2e, toneMapped: false })
+    : new THREE.MeshStandardMaterial({ color: 0x2a2b2e, roughness: 0.55 });
   const pic = new THREE.Mesh(new THREE.PlaneGeometry(width, height), picMat);
   pic.position.z = 0.002;
   g.add(pic);
@@ -226,7 +235,8 @@ deskSpot.shadow.mapSize.set(1024, 1024);
 deskSpot.shadow.bias = -0.0005;
 scene.add(deskSpot, deskSpot.target);
 // gallery light washing the projects wall
-const gallery = new THREE.SpotLight(0xfff0dc, 34, 12, Math.PI / 3.2, 0.7, 1.2);
+// soft wash on the projects wall (the cards themselves are unlit, so no hot spot on them)
+const gallery = new THREE.SpotLight(0xfff0dc, 18, 12, Math.PI / 2.6, 1, 1.2);
 gallery.position.set(1.2, 4.3, 0);
 gallery.target.position.set(5, 2.1, 0);
 scene.add(gallery, gallery.target);
@@ -673,7 +683,7 @@ const deskX = -0.8, deskZ = -4.35;
   scene.add(win);
 
   // "About" panel: a framed print with a short summary
-  const about = makeFrame({ width: 2.0, height: 1.3, mat: 0 });
+  const about = makeFrame({ width: 2.0, height: 1.3, mat: 0, unlit: true });
   const AS = 2.2 * TEXQ; // drawn in a 1000x650 layout, rendered at ~2x for crisp text
   const aboutTex = canvasTex(Math.round(1000 * AS), Math.round(650 * AS), (ctx) => {
     ctx.scale(AS, AS);
@@ -735,13 +745,17 @@ const deskX = -0.8, deskZ = -4.35;
   title.position.set(W / 2 - 0.02, 3.85, 0);
   scene.add(title);
 
-  // 2 rows; the number of columns (and frame size) adapts to the number of projects
+  // Project cards: screenshot + text strip drawn into ONE texture, rendered unlit
+  // (no lighting or tone mapping), so colours are exact and text is crisp.
+  // 2 rows; the number of columns (and card size) adapts to the number of projects.
   const list = projects.slice(0, 10);
   const nCols = Math.max(1, Math.ceil(list.length / 2));
-  const span = 9.3;
+  const span = 9.5;
   const spacing = span / nCols;
-  const fw = Math.min(1.9, spacing - 0.35), fh = fw * 0.58;
-  const rows = [2.8, 1.38];
+  const CARD_W = 1024, IMG_H = 576, BAND_H = 200, CARD_H = IMG_H + BAND_H; // layout in px
+  const cw = Math.min(2.0, spacing - 0.14);
+  const ch = cw * (CARD_H / CARD_W);
+  const rows = [2.62, 2.62 - ch - 0.16];
   const slot = (i) => {
     const row = i < nCols ? 0 : 1;
     const inRow = row === 0 ? Math.min(nCols, list.length) : list.length - nCols;
@@ -749,39 +763,28 @@ const deskX = -0.8, deskZ = -4.35;
     const offset = ((nCols - inRow) / 2) * spacing; // centers a shorter second row
     return { y: rows[row], z: -span / 2 + spacing * (k + 0.5) + offset };
   };
+  const CS = Math.min(1.5, 2 * TEXQ); // render the 1024 layout at up to 1536 px wide
+
   list.forEach((p, i) => {
-    const f = makeFrame({ width: fw, height: fh, mat: 0, frame: 0.02, depth: 0.03 });
-    const g = f.group;
-    const PS = 1.6 * TEXQ; // card layout is 640 wide, rendered at ~1024 px
-    const card = canvasTex(Math.round(640 * PS), Math.round(640 * 0.58 * PS), (ctx) => {
-      ctx.scale(PS, PS);
-      drawProjectCard(ctx, 640, Math.round(640 * 0.58), p);
-    });
-    f.picMat.map = card.tex;
-    f.picMat.color.set(0xffffff);
-    if (p.image) loadCover(p.image, Math.round(1024 * TEXQ), Math.round(1024 * 0.58 * TEXQ), (img) => {
-      card.tex.dispose(); // free the placeholder card
-      f.picMat.map = img;
-      f.picMat.needsUpdate = true;
-    });
-    // museum-style label under the frame
-    const lw = Math.min(fw, 1.3), lh = 0.17;
-    const LS = 2.4 * TEXQ; // label layout at 400 px/m, rendered at ~960 px/m
-    const label = canvasTex(Math.round(lw * 400 * LS), Math.round(lh * 400 * LS), (ctx) => {
-      ctx.scale(LS, LS);
-      const w = lw * 400, h = lh * 400;
-      ctx.fillStyle = '#e9e6e0';
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#1c1c1e';
-      fitFont(ctx, p.title, 600, 24, w - 30);
-      ctx.fillText(p.title, 14, h * 0.45);
-      ctx.fillStyle = '#6a6863';
-      fitFont(ctx, p.type, 400, 17, w - 30);
-      ctx.fillText(p.type, 14, h * 0.82);
-    });
-    const lab = new THREE.Mesh(new THREE.PlaneGeometry(lw, lh), new THREE.MeshStandardMaterial({ map: label.tex, roughness: 0.8 }));
-    lab.position.set(-fw / 2 + lw / 2, -fh / 2 - 0.16, 0.003);
-    g.add(lab);
+    const g = new THREE.Group();
+    // thin dark frame with a slim accent line on top
+    box(cw + 0.03, ch + 0.03, 0.025, std(0x0d0e10, 0.5, 0.3), 0, 0, -0.012, g);
+
+    const card = canvasTex(Math.round(CARD_W * CS), Math.round(CARD_H * CS), () => {});
+    const draw = (img) => {
+      const ctx = card.ctx;
+      ctx.setTransform(CS, 0, 0, CS, 0, 0);
+      drawProjectCard(ctx, CARD_W, IMG_H, BAND_H, p, img);
+      card.tex.needsUpdate = true;
+      invalidate();
+    };
+    draw(null);
+    if (p.image) loadBitmap(p.image).then((img) => img && (draw(img), img.close && img.close()));
+
+    const mat = new THREE.MeshBasicMaterial({ map: card.tex, toneMapped: false });
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(cw, ch), mat);
+    plane.position.z = 0.002;
+    g.add(plane);
 
     g.rotation.y = -Math.PI / 2;
     const s = slot(i);
@@ -792,24 +795,52 @@ const deskX = -0.8, deskZ = -4.35;
   });
 }
 
-// Sober placeholder for projects without a screenshot
-function drawProjectCard(ctx, w, h, p) {
-  const g = ctx.createLinearGradient(0, 0, w, h);
-  g.addColorStop(0, '#24272b');
-  g.addColorStop(1, '#16171a');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, w, h);
+// Card layout: screenshot on top (cover-cropped), dark text strip below
+function drawProjectCard(ctx, w, imgH, bandH, p, img) {
+  // image area
+  if (img) {
+    const s = Math.max(w / img.width, imgH / img.height);
+    const dw = img.width * s, dh = img.height * s;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, w, imgH);
+    ctx.clip();
+    ctx.drawImage(img, (w - dw) / 2, (imgH - dh) / 2, dw, dh);
+    ctx.restore();
+  } else {
+    const g = ctx.createLinearGradient(0, 0, w, imgH);
+    g.addColorStop(0, '#2a2e34');
+    g.addColorStop(1, '#17191c');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, imgH);
+    ctx.fillStyle = PAL.accent;
+    ctx.fillRect(64, imgH / 2 - 70, 64, 4);
+    ctx.fillStyle = PAL.text;
+    fitFont(ctx, p.title, 600, 84, w - 128);
+    ctx.fillText(p.title, 64, imgH / 2 + 20);
+    ctx.fillStyle = '#8f8d88';
+    ctx.font = '26px "JetBrains Mono"';
+    ctx.fillText('No preview available', 64, imgH / 2 + 74);
+  }
+  // text strip
+  ctx.fillStyle = '#141517';
+  ctx.fillRect(0, imgH, w, bandH);
   ctx.fillStyle = PAL.accent;
-  ctx.fillRect(40, 70, 48, 3);
-  ctx.fillStyle = PAL.text;
-  fitFont(ctx, p.title, 600, 46, w - 80);
-  ctx.fillText(p.title, 40, 140);
-  ctx.fillStyle = PAL.textMuted;
-  ctx.font = `400 22px ${FONT}`;
-  ctx.fillText(p.type, 40, 180);
-  ctx.font = '18px "JetBrains Mono"';
-  ctx.fillStyle = '#7d7b77';
-  ctx.fillText(p.tech.join('  ·  '), 40, h - 40);
+  ctx.fillRect(0, imgH, w, 4);
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#f2efea';
+  fitFont(ctx, p.title, 600, 54, w - 96);
+  ctx.fillText(p.title, 48, imgH + 74);
+  ctx.fillStyle = PAL.accent;
+  fitFont(ctx, p.type.toUpperCase(), 600, 26, w - 96);
+  ctx.letterSpacing = '3px';
+  ctx.fillText(p.type.toUpperCase(), 48, imgH + 120);
+  ctx.letterSpacing = '0px';
+  ctx.fillStyle = '#a9a6a0';
+  ctx.font = '26px "JetBrains Mono"';
+  let tech = p.tech.join('  ·  ');
+  while (ctx.measureText(tech).width > w - 96 && tech.includes('·')) tech = tech.slice(0, tech.lastIndexOf('  ·  '));
+  ctx.fillText(tech, 48, imgH + 168);
 }
 
 // ============================================================
