@@ -166,20 +166,17 @@ function makeFrame({ width, height, mat = 0, frame = 0.025, depth = 0.04 }) {
 //  Renderer / scene
 // ============================================================
 const canvas = document.getElementById('scene');
-// MSAA only on standard-density screens: at 2x pixel density edges are already smooth,
-// and multisampling a 2x buffer is costly for no visible gain.
-const renderer = new THREE.WebGLRenderer({
-  canvas,
-  antialias: window.devicePixelRatio < 2,
-  powerPreference: 'high-performance',
-});
+// Antialiasing always on: it keeps text and frame edges clean on every screen.
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 // Quality tiers, picked automatically from the measured frame rate (see adaptQuality)
+// On a real GPU the resolution never drops below 1.75x (text stays sharp);
+// the last tier is only used when Chrome renders on the CPU (no hardware acceleration).
 const QUALITY = [
   { pr: Math.min(window.devicePixelRatio, 2) },
-  { pr: Math.min(window.devicePixelRatio, 1.5) },
-  { pr: Math.min(window.devicePixelRatio, 1.25) },
-  { pr: 1 },
+  { pr: Math.min(window.devicePixelRatio, 1.75) },
 ];
+const SOFTWARE_TIER = { pr: 1 };
+let softwareRendering = false;
 let qLevel = 0;
 ANISO = renderer.capabilities.getMaxAnisotropy();
 // If Chrome is rendering on the CPU (hardware acceleration off or GPU blocklisted),
@@ -188,9 +185,10 @@ ANISO = renderer.capabilities.getMaxAnisotropy();
   const gl = renderer.getContext();
   const dbg = gl.getExtension('WEBGL_debug_renderer_info');
   const gpu = dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '';
-  if (/swiftshader|basic render driver|llvmpipe|softpipe|software/i.test(gpu)) qLevel = QUALITY.length - 1;
+  softwareRendering = /swiftshader|basic render driver|llvmpipe|softpipe|software/i.test(gpu);
 }
-renderer.setPixelRatio(QUALITY[qLevel].pr);
+const currentTier = () => (softwareRendering ? SOFTWARE_TIER : QUALITY[qLevel]);
+renderer.setPixelRatio(currentTier().pr);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -820,7 +818,8 @@ function drawProjectCard(ctx, w, h, p) {
 const isNarrow = () => window.innerWidth / window.innerHeight < 0.9;
 const stations = {
   accueil: () => ({ pos: isNarrow() ? [4.2, 3.4, 9.5] : [5.0, 3.1, 6.4], target: [-0.4, 1.6, -2] }),
-  apropos: () => ({ pos: isNarrow() ? [2.4, 2.25, 1.6] : [0.8, 2.25, 1.6], target: [-5, 2.25, 1.6] }),
+  // close enough that the wall panel's text reads large and sharp
+  apropos: () => ({ pos: isNarrow() ? [0.6, 2.25, 1.6] : [-1.3, 2.25, 2.2], target: [-5, 2.25, 2.2] }),
   projets: () => {
     // step back so every column fits on screen
     const half = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect;
@@ -1179,7 +1178,7 @@ mergeStatic();
 renderer.shadowMap.needsUpdate = true; // bake shadows once
 
 function applyQuality() {
-  renderer.setPixelRatio(QUALITY[qLevel].pr);
+  renderer.setPixelRatio(currentTier().pr);
   onResize();
 }
 applyQuality();
@@ -1188,7 +1187,7 @@ applyQuality();
 let sampleTime = 0, sampleFrames = 0, measureFrom = Infinity;
 function adaptQuality(dt) {
   if (tween) return; // camera moves are not representative
-  if (performance.now() < measureFrom || qLevel >= QUALITY.length - 1) return;
+  if (softwareRendering || performance.now() < measureFrom || qLevel >= QUALITY.length - 1) return;
   if (!renderedLastFrame) return; // with on-demand rendering, only back-to-back frames say anything about speed
   sampleTime += dt;
   sampleFrames++;
@@ -1198,8 +1197,9 @@ function adaptQuality(dt) {
   sampleFrames = 0;
   // only step down after two slow windows in a row (< 40 fps), so a loading hiccup
   // doesn't blur the site for good on a normal computer
-  slowWindows = avg > 1 / 40 ? slowWindows + 1 : 0;
-  if (slowWindows >= 2) {
+  // only for a genuinely struggling GPU: under 30 fps for three windows in a row
+  slowWindows = avg > 1 / 30 ? slowWindows + 1 : 0;
+  if (slowWindows >= 3) {
     slowWindows = 0;
     qLevel++;
     applyQuality();
