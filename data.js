@@ -3,7 +3,8 @@
 //  Images can be URLs or local files in "assets/" (e.g. 'assets/project.png').
 // ============================================================
 
-const IMG = 'https://ahmedbourazza.github.io/assets/imgs/';
+// Project screenshots, optimised (WebP, 1536 px wide) and stored with the site
+const P = 'assets/projects/';
 
 export const profile = {
   name: 'Ahmed Bourazza',
@@ -104,7 +105,7 @@ export const projects = [
       'Automatically spots bags and objects left unattended using computer vision, with a web interface to follow the alerts.',
     tech: ['Python', 'Django', 'OpenCV', 'YOLOv8', 'DeepSORT'],
     color: '#22d3ee',
-    image: IMG + 'objectDetection.png',
+    image: P + 'object-detection.webp',
     link: 'https://www.linkedin.com/posts/ahmed-bourazza-06618b244_its-always-exciting-to-bring-ai-into-real-world-activity-7373303229734109184-1IeV',
     code: 'https://github.com/Ahmedbourazza/object-detection',
   },
@@ -125,7 +126,7 @@ export const projects = [
     description: 'Website that recognises hand signs and faces with machine learning models served through Flask.',
     tech: ['Python', 'Flask', 'Machine Learning'],
     color: '#ec4899',
-    image: IMG + 'fr.png',
+    image: P + 'hand-sign.webp',
     link: null,
     code: null,
   },
@@ -136,7 +137,7 @@ export const projects = [
       'Lets firefighters at OCP inspect safety equipment (pumps, extinguishers) on tablet and web instead of paper forms, with three permission levels and dashboards.',
     tech: ['Spring Boot', 'Spring Security', 'Spring Session', 'MySQL'],
     color: '#f97316',
-    image: IMG + 'fireControl.png',
+    image: P + 'fire-control.webp',
     link: 'https://www.linkedin.com/posts/ahmed-bourazza-06618b244_ocp-stage-innovation-activity-7236283786089361409-plXN',
     code: null,
   },
@@ -146,7 +147,7 @@ export const projects = [
     description: 'E-commerce application with separate customer, owner and administrator spaces.',
     tech: ['ASP.NET', 'Bootstrap', 'MySQL', 'JavaScript'],
     color: '#a78bfa',
-    image: IMG + 'ecom.png',
+    image: P + 'flashop.webp',
     link: 'https://www.linkedin.com/posts/ahmed-bourazza-06618b244_flashop-ecommerce-aspnetcore-activity-7147713403321552897-j3l2',
     code: null,
   },
@@ -157,7 +158,7 @@ export const projects = [
       'Incident management system for reporting, tracking and resolving issues, with dedicated spaces for consultants and beneficiaries.',
     tech: ['MERISE', 'PHP', 'MySQL'],
     color: '#3b82f6',
-    image: IMG + 'gali.png',
+    image: P + 'incident.webp',
     link: 'https://www.linkedin.com/posts/ahmed-bourazza-06618b244_alten-webdevelopment-activity-7131377487703351297-IE_O',
     code: null,
   },
@@ -167,7 +168,7 @@ export const projects = [
     description: 'Minimalist 2D action game where the player controls a cube in battle.',
     tech: ['Unity'],
     color: '#fbbf24',
-    image: IMG + "Capture%20d'%C3%A9cran%202024-06-11%20111507.png",
+    image: P + 'shapeswar.webp',
     link: null,
     code: null,
   },
@@ -177,7 +178,7 @@ export const projects = [
     description: 'Desktop library management application.',
     tech: ['Windows Forms', 'MySQL'],
     color: '#10b981',
-    image: IMG + 'library.png',
+    image: P + 'library.webp',
     link: 'https://www.linkedin.com/posts/ahmed-bourazza-06618b244_librarymanagementsystem-techinnovation-cshforms-activity-7136409529981792258-taU-',
     code: null,
   },
@@ -187,7 +188,7 @@ export const projects = [
     description: 'Library management system built with Spring and a MongoDB database.',
     tech: ['Spring', 'MongoDB'],
     color: '#6366f1',
-    image: IMG + 'librarySpring.png',
+    image: P + 'library-spring.webp',
     link: null,
     code: null,
   },
