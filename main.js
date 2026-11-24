@@ -474,6 +474,7 @@ const deskX = -0.8, deskZ = -4.35;
     screen.tex.needsUpdate = true;
   }
   let last = 0;
+  let lastSec = -1;
   const frustum = new THREE.Frustum();
   const vp = new THREE.Matrix4();
   animated.push((t) => {
@@ -486,6 +487,10 @@ const deskX = -0.8, deskZ = -4.35;
       last = t;
       typed = typed >= total + 50 ? 0 : typed + 1;
       drawCode();
+      // the clock and the mug steam ride on this same tick: no extra redraws
+      updateSteam(t);
+      const sec = new Date().getSeconds();
+      if (sec !== lastSec) { lastSec = sec; updateClock(); }
       invalidate();
     }
   });
@@ -585,6 +590,174 @@ const deskX = -0.8, deskZ = -4.35;
   chair.position.set(deskX - 0.1, 0, deskZ + 1.1);
   chair.rotation.y = Math.PI + 0.3;
   scene.add(chair);
+}
+
+// ============================================================
+//  Details that bring the room to life
+//  Static pieces are merged with the rest of the scene (almost free); the few
+//  moving ones (clock, steam) only update on the monitor's tick, when visible.
+// ============================================================
+// soft radial glow texture, shared by the lamp light pool and the mug steam
+const glowTex = canvasTex(128, 128, (ctx, w, h) => {
+  const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.45, 'rgba(255,255,255,0.35)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+}).tex;
+
+// snake plant in a ceramic pot, back-right corner
+{
+  const px = 4.35, pz = -4.35;
+  cyl(0.2, 0.16, 0.46, std(0xd9d4ca, 0.6), px, 0.23, pz, null, 28);
+  cyl(0.185, 0.185, 0.02, std(0x2b2119, 1), px, 0.45, pz, null, 28);
+  const leafMat = std(0x2f5a3c, 0.65);
+  const leafEdge = std(0x8a9a5b, 0.7);
+  for (let i = 0; i < 11; i++) {
+    const a = (i / 11) * Math.PI * 2 + (i % 2) * 0.3;
+    const h = 0.6 + ((i * 37) % 7) * 0.06;
+    const r = 0.04 + (i % 3) * 0.035;
+    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.045, h, 4), i % 4 === 0 ? leafEdge : leafMat);
+    leaf.scale.set(1, 1, 0.28);
+    leaf.position.set(px + Math.cos(a) * r, 0.45 + h / 2, pz + Math.sin(a) * r);
+    leaf.rotation.set(Math.sin(a) * 0.14, -a, -Math.cos(a) * 0.14);
+    leaf.castShadow = true;
+    scene.add(leaf);
+  }
+}
+
+// reading corner by the window: armchair, side table with a book, floor lamp
+{
+  const cx = -4.15, cz = -0.25;
+  const chair = new THREE.Group();
+  const fabric = std(0x5b5650, 0.95);
+  const legs = std(PAL.oakDark, 0.6);
+  box(0.78, 0.16, 0.72, fabric, 0, 0.38, 0, chair); // seat
+  box(0.72, 0.1, 0.6, std(0x67625b, 0.95), 0, 0.5, 0.04, chair); // cushion
+  const back = box(0.78, 0.62, 0.14, fabric, 0, 0.72, -0.3, chair);
+  back.rotation.x = 0.18;
+  box(0.12, 0.26, 0.7, fabric, -0.39, 0.55, 0, chair); // arms
+  box(0.12, 0.26, 0.7, fabric, 0.39, 0.55, 0, chair);
+  for (const [x, z] of [[-0.32, 0.28], [0.32, 0.28], [-0.32, -0.28], [0.32, -0.28]]) {
+    const l = cyl(0.022, 0.016, 0.3, legs, x, 0.15, z, chair, 10);
+    l.rotation.set(z > 0 ? 0.12 : -0.12, 0, x > 0 ? -0.12 : 0.12);
+  }
+  chair.position.set(cx, 0, cz);
+  chair.rotation.y = Math.PI / 2 + 0.35;
+  scene.add(chair);
+
+  // round oak side table with a book
+  const tx = -4.5, tz = 0.5;
+  cyl(0.24, 0.24, 0.03, std(PAL.oak, 0.55), tx, 0.55, tz, null, 32);
+  cyl(0.02, 0.02, 0.54, std(PAL.metal, 0.45, 0.5), tx, 0.27, tz, null, 10);
+  cyl(0.16, 0.16, 0.015, std(PAL.metal, 0.45, 0.5), tx, 0.008, tz, null, 24);
+  const book = box(0.17, 0.035, 0.24, std(0x2f3b4c, 0.8), tx + 0.02, 0.585, tz - 0.02);
+  book.rotation.y = 0.4;
+  box(0.16, 0.03, 0.22, std(0xd8d2c4, 0.8), tx + 0.02, 0.584, tz - 0.02).rotation.y = 0.4; // pages
+
+  // floor lamp: the shade glows softly (no extra light, so no extra cost)
+  const lx = -4.55, lz = -1.0;
+  cyl(0.16, 0.18, 0.025, std(PAL.metal, 0.45, 0.5), lx, 0.012, lz, null, 28);
+  cyl(0.012, 0.012, 1.55, std(PAL.metal, 0.45, 0.5), lx, 0.79, lz, null, 8);
+  const shadeMat = new THREE.MeshStandardMaterial({
+    color: 0xf3ead8, emissive: 0xffd9a0, emissiveIntensity: 0.9, roughness: 0.9, side: THREE.DoubleSide,
+  });
+  const shade = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 0.3, 32, 1, true), shadeMat);
+  shade.position.set(lx, 1.62, lz);
+  scene.add(shade);
+  // warm pool of light on the wall and floor, faked with a soft additive glow
+  const poolMat = new THREE.MeshBasicMaterial({
+    map: glowTex, color: 0xffcf8f, transparent: true, opacity: 0.18, depthWrite: false, blending: THREE.AdditiveBlending,
+  });
+  const wallPool = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), poolMat);
+  wallPool.rotation.y = Math.PI / 2;
+  wallPool.position.set(-W / 2 + 0.02, 1.7, lz);
+  scene.add(wallPool);
+  const floorPool = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.4), poolMat);
+  floorPool.rotation.x = -Math.PI / 2;
+  floorPool.position.set(lx + 0.4, 0.012, lz + 0.3);
+  scene.add(floorPool);
+}
+
+// a small stack of books on the desk
+{
+  const bx = deskX - 1.1, bz = deskZ - 0.3;
+  box(0.24, 0.04, 0.17, std(0x6b6257, 0.8), bx, 0.8, bz).rotation.y = 0.1;
+  box(0.22, 0.035, 0.16, std(0x5e3434, 0.8), bx + 0.01, 0.838, bz).rotation.y = -0.08;
+  box(0.2, 0.03, 0.15, std(0x222326, 0.8), bx, 0.871, bz).rotation.y = 0.18;
+}
+
+// wall clock showing the real time (back wall, between the name plate and the shelves)
+const wallClock = new THREE.Group();
+const clockHands = {};
+{
+  const face = new THREE.Mesh(new THREE.CircleGeometry(0.22, 48), std(0xece8e1, 0.8));
+  face.position.z = 0.012;
+  wallClock.add(face);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.225, 0.014, 10, 48), std(0x111214, 0.4, 0.3));
+  rim.position.z = 0.014;
+  wallClock.add(rim);
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const long = i % 3 === 0;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(long ? 0.012 : 0.007, long ? 0.04 : 0.025, 0.004), std(0x1c1c1e, 0.6));
+    m.position.set(Math.sin(a) * 0.18, Math.cos(a) * 0.18, 0.016);
+    m.rotation.z = -a;
+    wallClock.add(m);
+  }
+  const hand = (len, width, color, z) => {
+    const pivot = new THREE.Object3D();
+    pivot.position.z = z;
+    pivot.userData.dynamic = true; // moves, so it's never merged
+    const m = new THREE.Mesh(new THREE.BoxGeometry(width, len, 0.004), std(color, 0.5));
+    m.position.y = len / 2 - 0.02;
+    pivot.add(m);
+    wallClock.add(pivot);
+    return pivot;
+  };
+  clockHands.h = hand(0.11, 0.012, 0x1c1c1e, 0.02);
+  clockHands.m = hand(0.16, 0.008, 0x1c1c1e, 0.024);
+  clockHands.s = hand(0.17, 0.003, 0xa4472f, 0.028);
+  const cap = new THREE.Mesh(new THREE.CircleGeometry(0.012, 16), std(0xa4472f, 0.5));
+  cap.position.z = 0.031;
+  cap.userData.dynamic = true;
+  wallClock.add(cap);
+  wallClock.position.set(1.55, 3.15, -D / 2 + 0.02);
+  scene.add(wallClock);
+}
+function updateClock() {
+  const now = new Date();
+  const s = now.getSeconds(), m = now.getMinutes() + s / 60, h = (now.getHours() % 12) + m / 60;
+  clockHands.s.rotation.z = -(s / 60) * Math.PI * 2;
+  clockHands.m.rotation.z = -(m / 60) * Math.PI * 2;
+  clockHands.h.rotation.z = -(h / 12) * Math.PI * 2;
+}
+updateClock();
+
+// steam rising from the coffee mug
+const steam = [];
+{
+  const mx = deskX - 0.75, my = 0.9, mz = deskZ + 0.18;
+  for (let i = 0; i < 3; i++) {
+    const mat = new THREE.MeshBasicMaterial({ map: glowTex, color: 0xffffff, transparent: true, opacity: 0, depthWrite: false });
+    const puff = new THREE.Mesh(new THREE.PlaneGeometry(0.09, 0.09), mat);
+    puff.userData.dynamic = true;
+    puff.userData.phase = i / 3;
+    puff.userData.base = new THREE.Vector3(mx, my, mz);
+    scene.add(puff);
+    steam.push(puff);
+  }
+}
+function updateSteam(t) {
+  for (const p of steam) {
+    const k = (t * 0.35 + p.userData.phase) % 1; // 0 -> 1 over ~3 s
+    const b = p.userData.base;
+    p.position.set(b.x + Math.sin(k * 6 + p.userData.phase * 9) * 0.02, b.y + k * 0.22, b.z);
+    p.scale.setScalar(0.6 + k * 1.4);
+    p.material.opacity = Math.sin(k * Math.PI) * 0.22;
+    p.quaternion.copy(camera.quaternion); // always faces the camera
+  }
 }
 
 // ============================================================
