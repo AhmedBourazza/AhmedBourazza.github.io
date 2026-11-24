@@ -166,7 +166,13 @@ function makeFrame({ width, height, mat = 0, frame = 0.025, depth = 0.04 }) {
 //  Renderer / scene
 // ============================================================
 const canvas = document.getElementById('scene');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+// MSAA only on standard-density screens: at 2x pixel density edges are already smooth,
+// and multisampling a 2x buffer is costly for no visible gain.
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: window.devicePixelRatio < 2,
+  powerPreference: 'high-performance',
+});
 // Quality tiers, picked automatically from the measured frame rate (see adaptQuality)
 const QUALITY = [
   { pr: Math.min(window.devicePixelRatio, 2) },
@@ -176,7 +182,15 @@ const QUALITY = [
 ];
 let qLevel = 0;
 ANISO = renderer.capabilities.getMaxAnisotropy();
-renderer.setPixelRatio(QUALITY[0].pr);
+// If Chrome is rendering on the CPU (hardware acceleration off or GPU blocklisted),
+// start directly at a lighter tier instead of lagging until adaptQuality catches up.
+{
+  const gl = renderer.getContext();
+  const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+  const gpu = dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '';
+  if (/swiftshader|basic render driver|llvmpipe|softpipe|software/i.test(gpu)) qLevel = QUALITY.length - 1;
+}
+renderer.setPixelRatio(QUALITY[qLevel].pr);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -452,8 +466,15 @@ const deskX = -0.8, deskZ = -4.35;
     screen.tex.needsUpdate = true;
   }
   let last = 0;
+  const frustum = new THREE.Frustum();
+  const vp = new THREE.Matrix4();
   animated.push((t) => {
     if (t - last > 0.09) {
+      // skip the texture upload and the redraw when the monitor is off-screen
+      // (About and Projects views): the room then costs nothing while idle
+      vp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+      frustum.setFromProjectionMatrix(vp);
+      if (!frustum.intersectsObject(scr)) return;
       last = t;
       typed = typed >= total + 50 ? 0 : typed + 1;
       drawCode();
