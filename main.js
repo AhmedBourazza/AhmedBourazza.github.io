@@ -1165,7 +1165,7 @@ function projectHTML(p) {
 function aboutHTML() {
   return `
     <div class="head">
-      ${profile.photo ? `<img class="avatar" src="${esc(profile.photo)}" alt="${esc(profile.name)}" />` : ''}
+      ${profile.portrait || profile.photo ? `<img class="avatar" src="${esc(profile.portrait || profile.photo)}" alt="${esc(profile.name)}" />` : ''}
       <div>
         <span class="tag">About</span>
         <h2>${esc(profile.name)}</h2>

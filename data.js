@@ -10,7 +10,8 @@ export const profile = {
   name: 'Ahmed Bourazza',
   shortName: 'Ahmed',
   role: 'Full-Stack & Cloud Engineer',
-  photo: 'assets/ahmed.jpg',
+  photo: 'assets/ahmed.jpg', // small frame on the desk
+  portrait: 'assets/ahmed-pro.jpg', // main portrait: wall frame and About window
   status: 'Looking for a full-time role, available immediately and open to any location in France',
   intro:
     'Software engineer used to delivering business applications end to end, from the first requirements to production. ' +
