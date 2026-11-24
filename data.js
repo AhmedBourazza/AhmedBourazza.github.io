@@ -66,6 +66,14 @@ export const profile = {
       ],
     },
   ],
+  // Leadership and volunteering
+  involvement: [
+    {
+      role: 'President',
+      org: "Futurs Pionniers d'Aide et d'Accompagnement",
+      description: 'Led a charity club dedicated to helping and supporting people in need.',
+    },
+  ],
   education: [
     { date: '2024 – 2026', title: 'Engineering degree, Computer Science', school: 'ENSIM, Le Mans' },
     { date: '2020 – 2024', title: 'Preparatory and engineering cycle', school: 'ENSA Fès' },

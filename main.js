@@ -67,21 +67,39 @@ function canvasTex(w, h, draw) {
   t.anisotropy = ANISO; // keeps text sharp when a wall is seen at an angle
   return { tex: t, canvas: c, ctx };
 }
-// Loads an image and draws it "cover"-cropped into a small canvas texture,
-// so big screenshots never sit in GPU memory at full size.
-function loadCover(url, w, h, onReady) {
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.decoding = 'async';
-  img.onload = () => {
+// On-demand rendering flag (see frame()): anything that changes the picture calls invalidate()
+let needsRender = true;
+const invalidate = () => { needsRender = true; };
+
+// Loads an image and draws it "cover"-cropped into a canvas texture of the size we need,
+// so big screenshots never sit in GPU memory at full size. In Chrome, fetch + createImageBitmap
+// decodes the image off the main thread, so loading doesn't make the scene stutter.
+async function loadCover(url, w, h, onReady) {
+  try {
+    let src;
+    if ('createImageBitmap' in window) {
+      const blob = await (await fetch(url, { mode: 'cors' })).blob();
+      src = await createImageBitmap(blob);
+    } else {
+      src = await new Promise((ok, ko) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => ok(img);
+        img.onerror = ko;
+        img.src = url;
+      });
+    }
     const t = canvasTex(w, h, (ctx) => {
-      const s = Math.max(w / img.naturalWidth, h / img.naturalHeight);
-      const dw = img.naturalWidth * s, dh = img.naturalHeight * s;
-      ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+      const s = Math.max(w / src.width, h / src.height);
+      const dw = src.width * s, dh = src.height * s;
+      ctx.drawImage(src, (w - dw) / 2, (h - dh) / 2, dw, dh);
     });
+    if (src.close) src.close(); // free the decoded bitmap right away
     onReady(t.tex);
-  };
-  img.src = url;
+    invalidate();
+  } catch {
+    // image unavailable: the placeholder stays
+  }
 }
 function fitFont(ctx, text, weight, size, maxW) {
   let fs = size;
@@ -439,6 +457,7 @@ const deskX = -0.8, deskZ = -4.35;
       last = t;
       typed = typed >= total + 50 ? 0 : typed + 1;
       drawCode();
+      invalidate();
     }
   });
   const scrMat = new THREE.MeshBasicMaterial({ map: screen.tex });
@@ -658,7 +677,7 @@ const deskX = -0.8, deskZ = -4.35;
     ctx.fillRect(70, 300, w - 140, 2);
     const facts = [
       ['Experience', 'VINCI Energies · OCP · ALTEN · Amorino'],
-      ['Focus', (profile.boardSkills || []).slice(0, 4).join('  ·  ')],
+      ...(profile.involvement || []).slice(0, 1).map((v) => ['Leadership', `${v.role}, ${v.org}`]),
       ['Status', 'Available now · France'],
     ];
     facts.forEach(([k, v], i) => {
@@ -931,6 +950,7 @@ function aboutHTML() {
     </div>
     <p>${esc(profile.intro)}</p>
     ${profile.experience ? `<h3>Experience</h3><ul class="timeline">${profile.experience.map((e) => `<li><b>${esc(e.date)}</b><span>${esc(e.title)}<small>${esc(e.company)}</small>${e.missions ? `<ul class="missions">${e.missions.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : e.mission ? `<em>${esc(e.mission)}</em>` : ''}${e.softSkills ? `<span class="soft">${e.softSkills.map((s) => `<i>${esc(s)}</i>`).join('')}</span>` : ''}</span></li>`).join('')}</ul>` : ''}
+    ${profile.involvement ? `<h3>Leadership &amp; volunteering</h3><ul class="timeline">${profile.involvement.map((v) => `<li><b></b><span>${esc(v.role)}<small>${esc(v.org)}</small>${v.description ? `<em>${esc(v.description)}</em>` : ''}</span></li>`).join('')}</ul>` : ''}
     ${profile.education ? `<h3>Education</h3><ul class="timeline">${profile.education.map((e) => `<li><b>${esc(e.date.slice(-4))}</b><span>${esc(e.title)}<small>${esc(e.school)}</small></span></li>`).join('')}</ul>` : ''}
     <h3>Skills</h3>
     <div class="chips">${profile.skills.map((t) => `<span>${esc(t)}</span>`).join('')}</div>
@@ -1086,7 +1106,7 @@ function onResize() {
     cam.target.set(...s.target);
   }
 }
-window.addEventListener('resize', onResize);
+window.addEventListener('resize', () => { onResize(); invalidate(); });
 onResize();
 
 // ---------- Performance ----------
@@ -1148,6 +1168,7 @@ let sampleTime = 0, sampleFrames = 0, measureFrom = Infinity;
 function adaptQuality(dt) {
   if (tween) return; // camera moves are not representative
   if (performance.now() < measureFrom || qLevel >= QUALITY.length - 1) return;
+  if (!renderedLastFrame) return; // with on-demand rendering, only back-to-back frames say anything about speed
   sampleTime += dt;
   sampleFrames++;
   if (sampleTime < 2) return;
@@ -1169,10 +1190,16 @@ let slowWindows = 0;
 const render = () => renderer.render(scene, camera);
 if (location.search.includes('debug')) window.__three = { renderer, scene, camera, render, quality: () => qLevel, ui: { openPanel, contactHTML, aboutHTML } };
 
-renderer.compile(scene, camera); // compile shaders up front so entering doesn't stutter
 let entered = false;
 const hoverScale = new THREE.Vector3(1.02, 1.02, 1.02);
+const lastCamPos = new THREE.Vector3();
+const lastCamQuat = new THREE.Quaternion();
+let renderedLastFrame = false;
 const clock = new THREE.Clock();
+
+// On-demand rendering: the room is static, so a new image is only drawn when
+// something visible changes (camera, parallax, hover, typing on the monitor,
+// a texture finishing loading, a resize). Same quality, far less GPU and battery.
 function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(clock.getDelta(), 0.05);
@@ -1213,19 +1240,47 @@ function frame() {
       if (hovered) hovered.scale.setScalar(1);
       hovered = h;
       canvas.style.cursor = h ? 'pointer' : 'default';
+      invalidate();
     }
   }
-  if (hovered) hovered.scale.lerp(hoverScale, 0.2);
+  if (hovered && hovered.scale.x < hoverScale.x - 0.0005) {
+    hovered.scale.lerp(hoverScale, 0.2);
+    invalidate();
+  }
 
-  render();
+  // did the camera actually move since the last drawn image?
+  if (
+    camera.position.distanceToSquared(lastCamPos) > 1e-10 ||
+    Math.abs(camera.quaternion.dot(lastCamQuat)) < 1 - 1e-10
+  ) invalidate();
+
+  if (needsRender) {
+    needsRender = false;
+    render();
+    lastCamPos.copy(camera.position);
+    lastCamQuat.copy(camera.quaternion);
+    renderedLastFrame = true;
+  } else {
+    renderedLastFrame = false;
+  }
 }
+
+// Intro: compile every shader in parallel during the loading screen (KHR_parallel_shader_compile
+// in Chrome), so the first frame after "Enter" doesn't stutter.
+const enterBtn = document.getElementById('enter');
+enterBtn.disabled = true;
+(renderer.compileAsync ? renderer.compileAsync(scene, camera) : Promise.resolve(renderer.compile(scene, camera)))
+  .catch(() => {})
+  .finally(() => {
+    document.getElementById('loader').classList.add('hide');
+    enterBtn.disabled = false;
+  });
 frame();
 
-// Intro
-document.getElementById('loader').classList.add('hide');
 document.getElementById('enter').addEventListener('click', () => {
   document.getElementById('intro').classList.add('hide');
   entered = true;
+  invalidate();
   clock.getDelta();
   measureFrom = performance.now() + 4000; // let loading and the first camera move settle before judging speed
   goTo('accueil');

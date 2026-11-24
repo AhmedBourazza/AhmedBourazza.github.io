@@ -1,6 +1,8 @@
 :root {
   --bg: #0e0f10;
-  --card: rgba(20, 21, 23, 0.9);
+  /* nearly opaque instead of a CSS blur: a backdrop-filter over a live WebGL canvas
+     makes Chrome re-blur the area on every frame */
+  --card: rgba(20, 21, 23, 0.95);
   --border: rgba(255, 255, 255, 0.09);
   --border-strong: rgba(255, 255, 255, 0.18);
   --text: #ece9e4;
@@ -17,7 +19,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); c
   position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
   display: flex; gap: 2px; padding: 4px; z-index: 5;
   background: var(--card); border: 1px solid var(--border); border-radius: 10px;
-  backdrop-filter: blur(12px);
+ 
 }
 .nav button {
   font: 500 13px var(--font); letter-spacing: .02em; color: var(--muted); background: none; border: 0;
@@ -33,7 +35,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); c
 .socials a {
   width: 40px; height: 40px; display: grid; place-items: center;
   background: var(--card); border: 1px solid var(--border); border-radius: 9px;
-  transition: border-color .2s; backdrop-filter: blur(12px);
+  transition: border-color .2s;
 }
 .socials a:hover { border-color: var(--border-strong); }
 .socials svg { width: 18px; height: 18px; fill: none; stroke: var(--text); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
@@ -50,7 +52,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); c
   max-height: calc(100vh - 110px); overflow-y: auto;
   padding: 28px; z-index: 6;
   background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-  backdrop-filter: blur(16px);
+ 
   opacity: 0; transform: translateY(16px); pointer-events: none; transition: opacity .35s ease, transform .35s ease;
 }
 .panel.open { opacity: 1; transform: none; pointer-events: auto; }
@@ -141,6 +143,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); c
 .intro-card p { color: var(--muted); line-height: 1.65; margin: 0 0 28px; }
 .intro-card .eyebrow { color: var(--accent); font-weight: 500; letter-spacing: .18em; text-transform: uppercase; font-size: 12px; margin: 0; }
 .intro-card .btn { font-size: 15px; padding: 12px 34px; }
+.intro-card .btn:disabled { opacity: .45; cursor: wait; }
 .loader {
   position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
   display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; transition: opacity .4s;
