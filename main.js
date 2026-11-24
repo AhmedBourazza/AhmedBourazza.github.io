@@ -677,17 +677,17 @@ const deskX = -0.8, deskZ = -4.35;
     ctx.fillRect(70, 300, w - 140, 2);
     const facts = [
       ['Experience', 'VINCI Energies · OCP · ALTEN · Amorino'],
-      ...(profile.involvement || []).slice(0, 1).map((v) => ['Leadership', `${v.role}, ${v.org}`]),
+      ...(profile.involvement || []).slice(0, 1).map((v) => ['Extracurricular', `${v.role}, ${v.org}`]),
       ['Status', 'Available now · France'],
     ];
     facts.forEach(([k, v], i) => {
       const y = 370 + i * 70;
       ctx.fillStyle = PAL.textMuted;
-      ctx.font = `500 24px ${FONT}`;
+      fitFont(ctx, k.toUpperCase(), 500, 22, 260);
       ctx.fillText(k.toUpperCase(), 70, y);
       ctx.fillStyle = PAL.text;
-      fitFont(ctx, v, 400, 30, w - 360);
-      ctx.fillText(v, 290, y);
+      fitFont(ctx, v, 400, 30, w - 420);
+      ctx.fillText(v, 350, y);
     });
     ctx.fillStyle = PAL.textMuted;
     ctx.font = `400 22px ${FONT}`;
@@ -950,7 +950,7 @@ function aboutHTML() {
     </div>
     <p>${esc(profile.intro)}</p>
     ${profile.experience ? `<h3>Experience</h3><ul class="timeline">${profile.experience.map((e) => `<li><b>${esc(e.date)}</b><span>${esc(e.title)}<small>${esc(e.company)}</small>${e.missions ? `<ul class="missions">${e.missions.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : e.mission ? `<em>${esc(e.mission)}</em>` : ''}${e.softSkills ? `<span class="soft">${e.softSkills.map((s) => `<i>${esc(s)}</i>`).join('')}</span>` : ''}</span></li>`).join('')}</ul>` : ''}
-    ${profile.involvement ? `<h3>Leadership &amp; volunteering</h3><ul class="timeline">${profile.involvement.map((v) => `<li><b></b><span>${esc(v.role)}<small>${esc(v.org)}</small>${v.description ? `<em>${esc(v.description)}</em>` : ''}</span></li>`).join('')}</ul>` : ''}
+    ${profile.involvement ? `<h3>Extracurricular activities</h3><ul class="timeline">${profile.involvement.map((v) => `<li><b></b><span>${esc(v.role)}<small>${esc(v.org)}</small>${v.description ? `<em>${esc(v.description)}</em>` : ''}</span></li>`).join('')}</ul>` : ''}
     ${profile.education ? `<h3>Education</h3><ul class="timeline">${profile.education.map((e) => `<li><b>${esc(e.date.slice(-4))}</b><span>${esc(e.title)}<small>${esc(e.school)}</small></span></li>`).join('')}</ul>` : ''}
     <h3>Skills</h3>
     <div class="chips">${profile.skills.map((t) => `<span>${esc(t)}</span>`).join('')}</div>

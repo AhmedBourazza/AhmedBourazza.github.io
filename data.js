@@ -66,12 +66,12 @@ export const profile = {
       ],
     },
   ],
-  // Leadership and volunteering
+  // Extracurricular activities
   involvement: [
     {
       role: 'President',
-      org: 'Future Pioneers',
-      description: 'Led a charity club dedicated to helping and supporting people in need (aid and mentoring).',
+      org: 'Future Pioneers Club (charity club)',
+      description: 'Led the Future Pioneers charity club, dedicated to helping and supporting people in need (aid and mentoring).',
     },
   ],
   education: [
