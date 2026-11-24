@@ -70,7 +70,7 @@ export const profile = {
     { date: '2024 – 2026', title: 'Engineering degree, Computer Science', school: 'ENSIM, Le Mans' },
     { date: '2020 – 2024', title: 'Preparatory and engineering cycle', school: 'ENSA Fès' },
   ],
-  cv: 'https://ahmedbourazza.github.io/CV-Ahmed-Bourazza.pdf',
+  cv: 'CV-Ahmed-Bourazza.pdf', // file at the root of the site (replace it to update the CV)
   email: 'ahmed.bourazza.pro@gmail.com',
   phone: '+33 7 51 56 87 31',
   // Contact form: messages are forwarded to your inbox by FormSubmit (formsubmit.co).
