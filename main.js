@@ -288,11 +288,11 @@ const deskX = -0.8, deskZ = -4.35;
   const codeLines = [
     ['#c084fc', 'const '], ['#e2e8f0', 'portfolio = {'], null,
     ['#94a3b8', '  name: '], ['#fbbf24', `'${profile.name}',`], null,
-    ['#94a3b8', '  focus: '], ['#fbbf24', "['AI', 'Full Stack'],"], null,
-    ['#94a3b8', '  stack: '], ['#fbbf24', "'Python, .NET, Spring',"], null,
+    ['#94a3b8', '  focus: '], ['#fbbf24', "['Full Stack', 'Cloud'],"], null,
+    ['#94a3b8', '  stack: '], ['#fbbf24', "'.NET, Angular, Azure',"], null,
     ['#e2e8f0', '};'], null, null,
-    ['#c084fc', 'const '], ['#e2e8f0', 'model = '], ['#60a5fa', 'train'], ['#e2e8f0', '(data);'], null,
-    ['#c084fc', 'return '], ['#60a5fa', 'ship'], ['#e2e8f0', '(model);'], null,
+    ['#c084fc', 'const '], ['#e2e8f0', 'app = '], ['#60a5fa', 'build'], ['#e2e8f0', '(needs);'], null,
+    ['#c084fc', 'return '], ['#60a5fa', 'deploy'], ['#e2e8f0', '(app);'], null,
     ['#e2e8f0', '}'], null,
   ];
   // Drawn in a 768x384 coordinate space, scaled down to a 512x256 texture
@@ -613,11 +613,22 @@ const deskX = -0.8, deskZ = -4.35;
   t.position.set(W / 2 - 0.05, 3.82, 0);
   scene.add(t);
 
-  const cols =[-3.45, -1.15, 1.15, 3.45];
+  // 2 rows; the number of columns (and frame size) adapts to the number of projects
+  const list = projects.slice(0, 10);
+  const nCols = Math.max(1, Math.ceil(list.length / 2));
+  const span = 9.3;
+  const spacing = span / nCols;
+  const fw = Math.min(2.0, spacing - 0.3), fh = fw * 0.59;
   const rows = [2.75, 1.35];
-  projects.slice(0, 8).forEach((p, i) => {
+  const slot = (i) => {
+    const row = i < nCols ? 0 : 1;
+    const inRow = row === 0 ? Math.min(nCols, list.length) : list.length - nCols;
+    const k = row === 0 ? i : i - nCols;
+    const offset = ((nCols - inRow) / 2) * spacing; // centers a shorter second row
+    return { y: rows[row], z: -span / 2 + spacing * (k + 0.5) + offset };
+  };
+  list.forEach((p, i) => {
     const g = new THREE.Group();
-    const fw = 2.0, fh = 1.18;
     box(fw + 0.12, fh + 0.12, 0.05, std(0x15131d, 0.4), 0, 0, 0, g);
     const nm = neon(p.color, 2.2);
     box(fw + 0.14, 0.025, 0.06, nm, 0, (fh + 0.12) / 2, 0.005, g);
@@ -638,7 +649,8 @@ const deskX = -0.8, deskZ = -4.35;
     g.add(pic);
 
     g.rotation.y = -Math.PI / 2;
-    g.position.set(W / 2 - 0.05, rows[Math.floor(i / 4)], cols[i % 4]);
+    const s = slot(i);
+    g.position.set(W / 2 - 0.05, s.y, s.z);
     g.userData = { action: 'project', index: i, hover: true };
     scene.add(g);
     clickables.push(g);
@@ -862,7 +874,7 @@ function aboutHTML() {
       </div>
     </div>
     <p>${esc(profile.intro)}</p>
-    ${profile.experience ? `<h3>Experience</h3><ul class="timeline">${profile.experience.map((e) => `<li><b>${esc(e.date)}</b><span>${esc(e.title)}<small>${esc(e.company)}</small>${e.mission ? `<em>${esc(e.mission)}</em>` : ''}${e.softSkills ? `<span class="soft">${e.softSkills.map((s) => `<i>${esc(s)}</i>`).join('')}</span>` : ''}</span></li>`).join('')}</ul>` : ''}
+    ${profile.experience ? `<h3>Experience</h3><ul class="timeline">${profile.experience.map((e) => `<li><b>${esc(e.date)}</b><span>${esc(e.title)}<small>${esc(e.company)}</small>${e.missions ? `<ul class="missions">${e.missions.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : e.mission ? `<em>${esc(e.mission)}</em>` : ''}${e.softSkills ? `<span class="soft">${e.softSkills.map((s) => `<i>${esc(s)}</i>`).join('')}</span>` : ''}</span></li>`).join('')}</ul>` : ''}
     ${profile.education ? `<h3>Education</h3><ul class="timeline">${profile.education.map((e) => `<li><b>${esc(e.date.slice(-4))}</b><span>${esc(e.title)}<small>${esc(e.school)}</small></span></li>`).join('')}</ul>` : ''}
     <h3>Skills</h3>
     <div class="chips">${profile.skills.map((t) => `<span>${esc(t)}</span>`).join('')}</div>

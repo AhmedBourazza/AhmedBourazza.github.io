@@ -8,52 +8,62 @@ const IMG = 'https://ahmedbourazza.github.io/assets/imgs/';
 export const profile = {
   name: 'Ahmed Bourazza',
   shortName: 'Ahmed',
-  role: 'Software Engineer · AI & Full Stack',
+  role: 'Full-Stack .NET & Cloud Engineer',
   photo: 'assets/ahmed.jpg',
-  status: 'Available now for a full-time role anywhere in France',
+  status: 'Looking for a full-time role, available immediately and open to any location in France',
   intro:
-    'Software engineer and top of my class, selected for a double engineering degree at ENSIM (France). ' +
-    'I build production software end to end, from gathering requirements with end users to design, development, testing and documentation, ' +
-    'and I bring AI into that work: machine learning and computer vision projects, and AI-assisted development with GitHub Copilot and Claude Code. ' +
-    'I have shipped tools used every day at VINCI Energies, OCP and Amorino, and at the IT consultancy ALTEN.',
+    'Software engineer used to delivering business applications end to end, from the first requirements to production. ' +
+    'I gained my full-stack and cloud experience at large groups (VINCI Energies, OCP, Amorino) and at the IT consultancy ALTEN.',
   // 6 sticky notes on the 3D board
-  boardSkills: ['Python ML', 'Deep Learning', 'Computer Vision', 'C#/.NET', 'Java Spring', 'Angular React'],
+  boardSkills: ['C#/.NET', 'Angular React', 'Azure Cloud', 'SQL Server', 'DevOps CI/CD', 'Python AI'],
   // Full list shown in the "About me" panel
   skills: [
-    'Python', 'Machine Learning', 'Deep Learning', 'TensorFlow', 'Scikit-learn', 'OpenCV', 'YOLOv8',
-    'Pandas', 'Power BI', 'GitHub Copilot', 'Claude Code', 'C#', '.NET Core', 'Java', 'Spring Boot',
-    'Angular', 'React', 'SQL Server', 'Azure', 'Docker', 'CI/CD',
+    'C#', 'ASP.NET Core', 'Entity Framework Core', 'TypeScript', 'Angular', 'React', 'Java', 'Python',
+    'SQL Server', 'PostgreSQL', 'MongoDB', 'Azure', 'Azure DevOps', 'GitHub Actions', 'Docker',
+    'SonarQube', 'Checkmarx', 'xUnit', 'Figma', 'Scrum', 'GitHub Copilot', 'Claude Code',
   ],
+  // Missions are listed without the tech stack on purpose
   experience: [
     {
       date: '2026',
-      title: 'Analyst Developer (6-month internship)',
-      company: 'VINCI Energies SI · France',
-      mission:
-        'Designed and built version 2 of CS Bag, the project management tool of VINCI Energies SI. ' +
-        'Built automation and data backup scripts, and fixed issues reported in group applications.',
+      title: 'Analyst Developer · 6 months',
+      company: 'VINCI Energies SI · Le Mans, France · Mar – Sep 2026',
+      missions: [
+        'Designed and built CS Bag v2, a web application for tracking projects at VINCI Energies SI.',
+        'Structured the data model and cleaned up the database, removing more than 150,000 duplicates.',
+        'Set up scheduled email alerts and redesigned screens from design mockups.',
+        'Code quality and security checks, testing and cloud deployments within an Agile team.',
+      ],
     },
     {
       date: '2025',
-      title: 'Versatile Engineer (10-month contract)',
-      company: 'Amorino · France',
-      mission:
-        'Worked closely with the shop team to understand their day-to-day needs, organised the work and delivered a solution that replaced a costly existing tool.',
-      softSkills: ['Communication', 'Organization', 'Critical thinking'],
+      title: 'Versatile Manager · 10 months',
+      company: 'Amorino · Le Mans, France · Jan – Oct 2025',
+      missions: [
+        'Created calculation tools to make day-to-day calculations easier.',
+        "Managed staff and tracked the shop's supplies.",
+        'Coordinated with the team and took part in the daily organisation of the shop.',
+      ],
+      softSkills: ['Communication', 'Organization', 'Team coordination'],
     },
     {
       date: '2024',
-      title: 'Software Development Engineer (6-month internship)',
-      company: 'OCP · Morocco',
-      mission:
-        'Co-designed and built a responsive app that digitises fire safety equipment inspections, replacing paper and Excel.',
+      title: 'Full-Stack Developer · 6 months',
+      company: 'OCP · El Jadida, Morocco · Mar – Sep 2024',
+      missions: [
+        'Built from scratch an application that lets firefighters inspect safety equipment on tablet and web instead of paper forms.',
+        'Gathered requirements directly in the field, then designed the database and a layered back end.',
+        'Implemented authentication, three permission levels and dashboards, followed by testing and onboarding the teams.',
+      ],
     },
     {
       date: '2023',
-      title: 'Software Development Engineer (6-month internship)',
-      company: 'ALTEN · Morocco',
-      mission:
-        'Designed and built an incident management system (reporting, tracking and resolution) with spaces for consultants and beneficiaries.',
+      title: 'Full-Stack Developer · 6 months',
+      company: 'ALTEN · Fès, Morocco · Mar – Sep 2023',
+      missions: [
+        'Developed an incident tracking tool that makes it easier for consultants to report blockers and share solutions.',
+        'Modelled the data and built two interfaces (requesters and administrators), with code quality and security checks.',
+      ],
     },
   ],
   education: [
@@ -77,18 +87,29 @@ export const profile = {
   },
 };
 
-// Up to 8 projects are shown on the wall (4 columns x 2 rows)
+// Projects are laid out on the wall in 2 rows; the columns adapt to how many there are
 export const projects = [
   {
     title: 'Abandoned Object Detection',
-    type: 'AI · Computer vision',
+    type: 'AI · Computer vision · 2024',
     description:
-      'Video analysis system that detects abandoned objects and recognises when they are recovered, combining object detection, template matching and multi-object tracking.',
-    tech: ['Python', 'Django', 'OpenCV', 'YOLOv8', 'Template Matching', 'DeepSORT'],
+      'Automatically spots bags and objects left unattended using computer vision, with a web interface to follow the alerts.',
+    tech: ['Python', 'Django', 'OpenCV', 'YOLOv8', 'DeepSORT'],
     color: '#22d3ee',
     image: IMG + 'objectDetection.png',
     link: 'https://www.linkedin.com/posts/ahmed-bourazza-06618b244_its-always-exciting-to-bring-ai-into-real-world-activity-7373303229734109184-1IeV',
-    code: null,
+    code: 'https://github.com/Ahmedbourazza/object-detection',
+  },
+  {
+    title: 'Recipe Finder',
+    type: 'Web app · 2025',
+    description:
+      'Recipe search engine by ingredients, connected to TheMealDB API, packaged with Docker and shipped through a CI/CD pipeline.',
+    tech: ['Java 17', 'Spring Boot', 'MySQL', 'Docker', 'GitHub Actions'],
+    color: '#84cc16',
+    image: null,
+    link: null,
+    code: 'https://github.com/Ahmedbourazza/Recipes-project',
   },
   {
     title: 'Hand Sign & Face Recognition',
@@ -104,7 +125,7 @@ export const projects = [
     title: 'Fire Control System',
     type: 'Web app · OCP',
     description:
-      'Responsive app that digitises fire safety equipment inspections (pumps, extinguishers) at OCP Jorf Lasfar, replacing paper and Excel.',
+      'Lets firefighters at OCP inspect safety equipment (pumps, extinguishers) on tablet and web instead of paper forms, with three permission levels and dashboards.',
     tech: ['Spring Boot', 'Spring Security', 'Spring Session', 'MySQL'],
     color: '#f97316',
     image: IMG + 'fireControl.png',
