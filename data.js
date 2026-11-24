@@ -8,7 +8,7 @@ const IMG = 'https://ahmedbourazza.github.io/assets/imgs/';
 export const profile = {
   name: 'Ahmed Bourazza',
   shortName: 'Ahmed',
-  role: 'Full-Stack .NET & Cloud Engineer',
+  role: 'Full-Stack & Cloud Engineer',
   photo: 'assets/ahmed.jpg',
   status: 'Looking for a full-time role, available immediately and open to any location in France',
   intro:
@@ -18,7 +18,7 @@ export const profile = {
   boardSkills: ['C#/.NET', 'Angular React', 'Azure Cloud', 'SQL Server', 'DevOps CI/CD', 'Python AI'],
   // Full list shown in the "About me" panel
   skills: [
-    'C#', 'ASP.NET Core', 'Entity Framework Core', 'TypeScript', 'Angular', 'React', 'Java', 'Python',
+    'Java', 'C#', 'TypeScript', 'Python', 'Spring Boot', 'ASP.NET Core', 'Angular', 'React',
     'SQL Server', 'PostgreSQL', 'MongoDB', 'Azure', 'Azure DevOps', 'GitHub Actions', 'Docker',
     'SonarQube', 'Checkmarx', 'xUnit', 'Figma', 'Scrum', 'GitHub Copilot', 'Claude Code',
   ],

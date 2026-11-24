@@ -421,7 +421,7 @@ const deskX = -0.8, deskZ = -4.35;
     ['#8fb0cf', 'const '], ['#d4d4d4', 'engineer = {'], null,
     ['#9c9a95', '  name: '], ['#c9b28a', `'${profile.name}',`], null,
     ['#9c9a95', '  focus: '], ['#c9b28a', "['Full Stack', 'Cloud'],"], null,
-    ['#9c9a95', '  stack: '], ['#c9b28a', "'.NET, Angular, Azure',"], null,
+    ['#9c9a95', '  stack: '], ['#c9b28a', "'Java, C#, Angular, React, Azure',"], null,
     ['#d4d4d4', '};'], null, null,
     ['#6b6f75', '// from requirements to production'], null,
     ['#8fb0cf', 'const '], ['#d4d4d4', 'app = '], ['#b9c7d6', 'build'], ['#d4d4d4', '(needs);'], null,
