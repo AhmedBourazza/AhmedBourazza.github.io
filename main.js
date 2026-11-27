@@ -1173,14 +1173,13 @@ function aboutHTML() {
       </div>
     </div>
     <p>${esc(profile.intro)}</p>
-    ${profile.experience ? `<h3>Experience</h3><ul class="timeline">${profile.experience.map((e) => `<li><b>${esc(e.date)}</b><span>${esc(e.title)}<small>${esc(e.company)}</small>${e.missions ? `<ul class="missions">${e.missions.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : e.mission ? `<em>${esc(e.mission)}</em>` : ''}${e.softSkills ? `<span class="soft">${e.softSkills.map((s) => `<i>${esc(s)}</i>`).join('')}</span>` : ''}</span></li>`).join('')}</ul>` : ''}
-    ${profile.involvement ? `<h3>Extracurricular activities</h3><ul class="timeline">${profile.involvement.map((v) => `<li><b></b><span>${esc(v.role)}<small>${esc(v.org)}</small>${v.description ? `<em>${esc(v.description)}</em>` : ''}</span></li>`).join('')}</ul>` : ''}
-    ${profile.education ? `<h3>Education</h3><ul class="timeline">${profile.education.map((e) => `<li><b>${esc(e.date.slice(-4))}</b><span>${esc(e.title)}<small>${esc(e.school)}</small></span></li>`).join('')}</ul>` : ''}
+    ${profile.experience ? `<h3>Experience</h3><ul class="timeline">${profile.experience.map((e) => `<li>${e.date ? `<b>${esc(e.date)}</b>` : ''}<span>${esc(e.title)}<small>${esc(e.company)}</small>${e.missions ? `<ul class="missions">${e.missions.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : e.mission ? `<em>${esc(e.mission)}</em>` : ''}${e.softSkills ? `<span class="soft">${e.softSkills.map((s) => `<i>${esc(s)}</i>`).join('')}</span>` : ''}</span></li>`).join('')}</ul>` : ''}
+    ${profile.involvement ? `<h3>Extracurricular activities</h3><ul class="timeline">${profile.involvement.map((v) => `<li><span>${esc(v.role)}<small>${esc(v.org)}</small>${v.description ? `<em>${esc(v.description)}</em>` : ''}</span></li>`).join('')}</ul>` : ''}
+    ${profile.education ? `<h3>Education</h3><ul class="timeline">${profile.education.map((e) => `<li>${e.date ? `<b>${esc(e.date.slice(-4))}</b>` : ''}<span>${esc(e.title)}<small>${esc(e.school)}</small></span></li>`).join('')}</ul>` : ''}
     <h3>Skills</h3>
     <div class="chips">${profile.skills.map((t) => `<span>${esc(t)}</span>`).join('')}</div>
     <div class="actions">
       <button class="btn primary" data-go="projets">View projects</button>
-      ${profile.cv ? `<a class="btn" href="${esc(profile.cv)}" target="_blank" rel="noopener">Download CV</a>` : ''}
     </div>`;
 }
 function contactHTML() {
@@ -1207,7 +1206,6 @@ function contactHTML() {
     </form>` : ''}
     <div class="actions">
       <a class="btn" href="${esc(profile.socials.linkedin)}" target="_blank" rel="noopener">LinkedIn</a>
-      ${profile.cv ? `<a class="btn" href="${esc(profile.cv)}" target="_blank" rel="noopener">Download CV</a>` : ''}
     </div>`;
 }
 panelBody.addEventListener('click', (e) => {
@@ -1420,6 +1418,8 @@ const hoverScale = new THREE.Vector3(1.02, 1.02, 1.02);
 const lastCamPos = new THREE.Vector3();
 const lastCamQuat = new THREE.Quaternion();
 let renderedLastFrame = false;
+let lastMoveAt = 0;
+const SHARP_PR = Math.min(window.devicePixelRatio, 2);
 const clock = new THREE.Clock();
 
 // On-demand rendering: the room is static, so a new image is only drawn when
@@ -1477,7 +1477,20 @@ function frame() {
   if (
     camera.position.distanceToSquared(lastCamPos) > 1e-10 ||
     Math.abs(camera.quaternion.dot(lastCamQuat)) < 1 - 1e-10
-  ) invalidate();
+  ) {
+    invalidate();
+    lastMoveAt = performance.now();
+  }
+
+  // Without hardware acceleration (Chrome with it turned off), drawing at full resolution
+  // is slow, so drop to 1x only while the camera moves and redraw sharp once it stops.
+  if (softwareRendering) {
+    const want = performance.now() - lastMoveAt < 220 ? SOFTWARE_TIER.pr : SHARP_PR;
+    if (renderer.getPixelRatio() !== want) {
+      renderer.setPixelRatio(want);
+      invalidate();
+    }
+  }
 
   if (needsRender) {
     needsRender = false;

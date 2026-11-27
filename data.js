@@ -9,7 +9,7 @@ const P = 'assets/projects/';
 export const profile = {
   name: 'Ahmed Bourazza',
   shortName: 'Ahmed',
-  role: 'Full-Stack & Cloud Engineer',
+  role: 'Computer Science Engineer',
   photo: 'assets/ahmed.jpg', // small frame on the desk
   portrait: 'assets/ahmed-pro.jpg', // main portrait: wall frame and About window
   status: 'Looking for a full-time role, available immediately and open to any location in France',
@@ -27,9 +27,8 @@ export const profile = {
   // Missions are listed without the tech stack on purpose
   experience: [
     {
-      date: '2026',
-      title: 'Analyst Developer · 6 months',
-      company: 'VINCI Energies SI · Le Mans, France · Mar – Sep 2026',
+      title: 'Analyst Developer',
+      company: 'VINCI Energies SI · Le Mans, France',
       missions: [
         'Designed and built CS Bag v2, a web application for tracking projects at VINCI Energies SI.',
         'Structured the data model and cleaned up the database, removing more than 150,000 duplicates.',
@@ -38,9 +37,8 @@ export const profile = {
       ],
     },
     {
-      date: '2025',
-      title: 'Versatile Manager · 10 months',
-      company: 'Amorino · Le Mans, France · Jan – Oct 2025',
+      title: 'Versatile Manager',
+      company: 'Amorino · Le Mans, France',
       missions: [
         'Created calculation tools to make day-to-day calculations easier.',
         "Managed staff and tracked the shop's supplies.",
@@ -49,9 +47,8 @@ export const profile = {
       softSkills: ['Communication', 'Organization', 'Team coordination'],
     },
     {
-      date: '2024',
-      title: 'Full-Stack Developer · 6 months',
-      company: 'OCP · El Jadida, Morocco · Mar – Sep 2024',
+      title: 'Full-Stack Developer',
+      company: 'OCP · El Jadida, Morocco',
       missions: [
         'Built from scratch an application that lets firefighters inspect safety equipment on tablet and web instead of paper forms.',
         'Gathered requirements directly in the field, then designed the database and a layered back end.',
@@ -59,9 +56,8 @@ export const profile = {
       ],
     },
     {
-      date: '2023',
-      title: 'Full-Stack Developer · 6 months',
-      company: 'ALTEN · Fès, Morocco · Mar – Sep 2023',
+      title: 'Full-Stack Developer',
+      company: 'ALTEN · Fès, Morocco',
       missions: [
         'Developed an incident tracking tool that makes it easier for consultants to report blockers and share solutions.',
         'Modelled the data and built two interfaces (requesters and administrators), with code quality and security checks.',
@@ -77,10 +73,9 @@ export const profile = {
     },
   ],
   education: [
-    { date: '2024 – 2026', title: 'Engineering degree, Computer Science', school: 'ENSIM, Le Mans' },
-    { date: '2020 – 2024', title: 'Preparatory and engineering cycle', school: 'ENSA Fès' },
+    { title: 'Engineering degree, Computer Science', school: 'ENSIM, Le Mans' },
+    { title: 'Preparatory and engineering cycle', school: 'ENSA Fès' },
   ],
-  cv: 'CV-Ahmed-Bourazza.pdf', // file at the root of the site (replace it to update the CV)
   email: 'ahmed.bourazza.pro@gmail.com',
   phone: '+33 7 51 56 87 31',
   // Contact form: messages are forwarded to your inbox by FormSubmit (formsubmit.co).
@@ -101,7 +96,7 @@ export const profile = {
 export const projects = [
   {
     title: 'Abandoned Object Detection',
-    type: 'AI · Computer vision · 2024',
+    type: 'AI · Computer vision',
     description:
       'Automatically spots bags and objects left unattended using computer vision, with a web interface to follow the alerts.',
     tech: ['Python', 'Django', 'OpenCV', 'YOLOv8', 'DeepSORT'],
@@ -112,7 +107,7 @@ export const projects = [
   },
   {
     title: 'Recipe Finder',
-    type: 'Web app · 2025',
+    type: 'Web app',
     description:
       'Recipe search engine by ingredients, connected to TheMealDB API, packaged with Docker and shipped through a CI/CD pipeline.',
     tech: ['Java 17', 'Spring Boot', 'MySQL', 'Docker', 'GitHub Actions'],
